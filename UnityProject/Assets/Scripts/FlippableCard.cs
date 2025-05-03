@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class FlippableCard : MonoBehaviour
 {
+    public delegate void FlipCallback(Card card);
+
     [SerializeField] protected RectTransform m_CardFront, m_CardBack;
     [SerializeField] private AnimationCurve m_FlipCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
@@ -13,9 +15,7 @@ public class FlippableCard : MonoBehaviour
     protected static Vector3 ViewToRotation(bool _isFrontView) => _isFrontView ? s_FontViewRotation : s_BackViewRotation;
    
     public bool IsFrontVisible => transform.eulerAngles.y < 90 || transform.eulerAngles.y > 270;
-
     public bool Isflipping => m_FlipCoroutine != null;
-    
     
     [ContextMenu("Immediate front view")]
     public void SetFrontViewImmediate()
@@ -54,13 +54,13 @@ public class FlippableCard : MonoBehaviour
         m_CardBack.gameObject.SetActive(isFrontVisible == false);
     }
 
-    protected void FlipCard(bool _frontView, float _duration = 1f)
+    public void FlipCard(bool _frontView, float _duration = 1f, FlipCallback callback = null)
     {
         CleanCoroutine();
-        m_FlipCoroutine = StartCoroutine(FlipCardCoroutine(_frontView, _duration));
+        m_FlipCoroutine = StartCoroutine(FlipCardCoroutine(_frontView, _duration, callback));
     }
 
-    private IEnumerator FlipCardCoroutine(bool _frontView, float _duration)
+    private IEnumerator FlipCardCoroutine(bool _frontView, float _duration, FlipCallback callback)
     {
         Vector3 startRotation = transform.eulerAngles;
         Vector3 targetRotation = ViewToRotation(_frontView);
@@ -78,6 +78,8 @@ public class FlippableCard : MonoBehaviour
         transform.eulerAngles = targetRotation;
         UpdateFrontAndBackVisibility();
         m_FlipCoroutine = null;
+        
+        callback?.Invoke(transform.parent.GetComponent<Card>());
     }
 
     private void CleanCoroutine()
