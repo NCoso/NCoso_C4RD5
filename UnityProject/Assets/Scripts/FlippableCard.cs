@@ -3,42 +3,29 @@ using UnityEngine;
 
 public class FlippableCard : MonoBehaviour
 {
-    public delegate void FlipCallback(Card card);
+    protected static Vector3 s_FaceUpRotation => Vector3.zero;
+    protected static Vector3 s_FaceDownRotation => Vector3.up * 180;
+    protected static Vector3 ViewToRotation(bool _isFaceUp) => _isFaceUp ? s_FaceUpRotation : s_FaceDownRotation;
+    
+    public delegate void OnFlipCompleted(Card card);
 
     [SerializeField] protected RectTransform m_CardFront, m_CardBack;
     [SerializeField] private AnimationCurve m_FlipCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     protected Coroutine m_FlipCoroutine;
-    
-    protected static Vector3 s_FontViewRotation => Vector3.zero;
-    protected static Vector3 s_BackViewRotation => Vector3.up * 180;
-    protected static Vector3 ViewToRotation(bool _isFrontView) => _isFrontView ? s_FontViewRotation : s_BackViewRotation;
-   
     public bool IsFrontVisible => transform.eulerAngles.y < 90 || transform.eulerAngles.y > 270;
     public bool Isflipping => m_FlipCoroutine != null;
-    
-    [ContextMenu("Immediate front view")]
-    public void SetFrontViewImmediate()
-    {
-        SetViewImmediate(_isFrontView: true);
-    }
-    
-    [ContextMenu("Immediate back view")]
-    public void SetBackViewImmediate()
-    {
-        SetViewImmediate(_isFrontView: false);
-    }
     
     [ContextMenu("Front view flip")]
     public void FrontViewFlip()
     {
-        FlipCard(_frontView: true);
+        FlipCard(_faceUp: true);
     }
     
     [ContextMenu("Back view flip")]
     public void BackViewFlip()
     {
-        FlipCard(_frontView: false);
+        FlipCard(_faceUp: false, 0.5f);
     }
 
     public void SetViewImmediate(bool _isFrontView)
@@ -54,16 +41,16 @@ public class FlippableCard : MonoBehaviour
         m_CardBack.gameObject.SetActive(isFrontVisible == false);
     }
 
-    public void FlipCard(bool _frontView, float _duration = 1f, FlipCallback callback = null)
+    public void FlipCard(bool _faceUp, float _duration = 1f, OnFlipCompleted completed = null)
     {
         CleanCoroutine();
-        m_FlipCoroutine = StartCoroutine(FlipCardCoroutine(_frontView, _duration, callback));
+        m_FlipCoroutine = StartCoroutine(FlipCardCoroutine(_faceUp, _duration, completed));
     }
 
-    private IEnumerator FlipCardCoroutine(bool _frontView, float _duration, FlipCallback callback)
+    private IEnumerator FlipCardCoroutine(bool _faceUp, float _duration, OnFlipCompleted completed)
     {
         Vector3 startRotation = transform.eulerAngles;
-        Vector3 targetRotation = ViewToRotation(_frontView);
+        Vector3 targetRotation = ViewToRotation(_faceUp);
         float elapsedTime = 0f;
 
         while (elapsedTime < _duration)
@@ -79,7 +66,7 @@ public class FlippableCard : MonoBehaviour
         UpdateFrontAndBackVisibility();
         m_FlipCoroutine = null;
         
-        callback?.Invoke(transform.parent.GetComponent<Card>());
+        completed?.Invoke(transform.parent.GetComponent<Card>());
     }
 
     private void CleanCoroutine()

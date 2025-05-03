@@ -3,15 +3,15 @@ using UnityEngine;
 
 public class MatchingCardsController : MonoBehaviour
 {
-    [SerializeField] private Card m_cardPrefab;
-    [SerializeField] private CardsGridLayout m_gridLayout;
+    [SerializeField] private Card m_cardPrefab; // CardPrefab - dynamic instantiation
+    [SerializeField] private CardsGridLayout m_gridLayout; // Content-fitter Grid layout for cards
 
+    // Gameplay data:
     protected int m_totalPairs = 0;
     protected int m_foundPairs = 0;
     protected int m_turns = 0;
-    protected Card[] m_cards;
-    
     protected Card flippedCard = null;
+    protected Card[] m_cards;
 
     public void Awake()
     {
@@ -63,7 +63,7 @@ public class MatchingCardsController : MonoBehaviour
             Card card2 = Instantiate(m_cardPrefab, m_gridLayout.transform);
             card1.gameObject.SetActive(true);
             card2.gameObject.SetActive(true);
-            Card.CardContentData pairCardData = Card.GetRandomCardContentData();
+            CardContentData pairCardData = CardContent.GetRandomCardContentData();
             card1.SetContentData(pairCardData);
             card2.SetContentData(pairCardData);
 
@@ -77,7 +77,7 @@ public class MatchingCardsController : MonoBehaviour
 
     public void FlipCard(Card card)
     {
-        card.AnimateFrontFlip(CardFlipped);
+        card.AnimateFrontFlip(_onCompleted: CardFlipped);
     }
 
     public void CardFlipped(Card card)
@@ -97,14 +97,10 @@ public class MatchingCardsController : MonoBehaviour
     {
         m_turns += 1;
         
-        if (card1.ContentData.Equals(card2.ContentData))
-        {
+        if (card1.IsConentEquals(card2))
             PairSolved(card1, card2);
-        }
         else
-        {
             PairFailed(card1, card2);
-        }
     }
 
     public void PairSolved(Card card1, Card card2)
