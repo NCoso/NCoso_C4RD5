@@ -31,6 +31,8 @@ public class MatchingCardsController : MonoBehaviour
         
         if (_gridSize.x * _gridSize.y % 2 == 1)
             throw new ArgumentException("horizontal or vertical grid size must be a even number, so all cards could be paired");
+
+        MatchingCardsScoreSystem.Reset();
         
         m_totalPairs = _gridSize.x * _gridSize.y / 2;
         m_foundPairs = 0;
@@ -108,7 +110,10 @@ public class MatchingCardsController : MonoBehaviour
     public void PairSolved(Card card1, Card card2)
     {
         Debug.Log("Pair Solved - keep front-facing");
+        MatchingCardsScoreSystem.OnPairSolved();
+        
         m_foundPairs += 1;
+        
         if (m_foundPairs == m_totalPairs)
             GameCompleted();
     }
@@ -116,6 +121,8 @@ public class MatchingCardsController : MonoBehaviour
     public void PairFailed(Card card1, Card card2)
     {
         Debug.Log("Pair Failed - revert to back-facing");
+        MatchingCardsScoreSystem.OnPairFailed();
+        
         card1.AnimateBackFlip();
         card2.AnimateBackFlip();
     }
@@ -123,5 +130,6 @@ public class MatchingCardsController : MonoBehaviour
     public void GameCompleted()
     {
         Debug.Log("All pairs solved - game completed");
+        MatchingCardsScoreSystem.OnGameCompleted(m_turns);
     }
 }
