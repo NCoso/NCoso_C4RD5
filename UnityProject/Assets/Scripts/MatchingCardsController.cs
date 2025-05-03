@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using System.Collections;
 
 public class MatchingCardsController : MonoBehaviour
 {
@@ -110,10 +111,17 @@ public class MatchingCardsController : MonoBehaviour
         
         m_foundPairs += 1;
         
-        if (m_foundPairs == m_totalPairs)
-            GameCompleted();
-    }
+        card1.SuccessGlow();
+        card2.SuccessGlow();
 
+        MatchingCardsSfx.PlaySuccessSfx();
+        
+        if (m_foundPairs == m_totalPairs)
+        {
+            GameCompleted();
+        }
+    }
+    
     public void PairFailed(Card card1, Card card2)
     {
         Debug.Log("Pair Failed - revert to back-facing");
@@ -121,11 +129,28 @@ public class MatchingCardsController : MonoBehaviour
         
         card1.AnimateBackFlip();
         card2.AnimateBackFlip();
+        
+        MatchingCardsSfx.PlayFailSfx();
     }
 
     public void GameCompleted()
     {
         Debug.Log("All pairs solved - game completed");
         MatchingCardsScoreSystem.OnGameCompleted(m_turns);
+        StartCoroutine(GameOverAnimations());
+    }
+
+    public IEnumerator GameOverAnimations(float _delay = 1.2f)
+    {
+        yield return new WaitForSeconds(_delay);
+
+        float delayBetweenCards = 0.05f;
+        for (int i = 0; i < m_cards.Length; i += 1)
+        {
+            m_cards[i].SuccessGlow(_delay:delayBetweenCards * i);
+        }
+        
+        MatchingCardsSfx.PlayGameOverSfx(_delay: delayBetweenCards * m_cards.Length * 0.5f);
+        
     }
 }

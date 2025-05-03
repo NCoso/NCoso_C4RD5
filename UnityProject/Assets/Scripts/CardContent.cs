@@ -3,7 +3,6 @@ using UnityEngine.UI;
 
 public class CardContent : MonoBehaviour
 {
-    
     [SerializeField] protected Image m_CardIcon;
 
     public CardContentData ContentData
@@ -33,6 +32,11 @@ public class CardContent : MonoBehaviour
     public static CardContentData GetRandomCardContentData()
     {
         return new CardContentData(GetRandomCardColor());
+    }
+    
+    public bool IsConentEquals(CardContent _other)
+    {
+        return (this != null) && (_other != null) && this.ContentData.Equals(_other.ContentData);
     }
     
 }

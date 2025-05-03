@@ -3,18 +3,27 @@ using UnityEngine;
 
 public class FlippableCard : MonoBehaviour
 {
+    
     protected static Vector3 s_FaceUpRotation => Vector3.zero;
     protected static Vector3 s_FaceDownRotation => Vector3.up * 180;
     protected static Vector3 ViewToRotation(bool _isFaceUp) => _isFaceUp ? s_FaceUpRotation : s_FaceDownRotation;
     
+    
     public delegate void OnFlipCompleted(Card card);
+    
 
     [SerializeField] protected RectTransform m_CardFront, m_CardBack;
     [SerializeField] private AnimationCurve m_FlipCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
+    
+    
     protected Coroutine m_FlipCoroutine;
+    
+    
     public bool IsFrontVisible => transform.eulerAngles.y < 90 || transform.eulerAngles.y > 270;
-    public bool Isflipping => m_FlipCoroutine != null;
+    public bool IsFlipping => m_FlipCoroutine != null;
+    
+    
     
     [ContextMenu("Front view flip")]
     public void FrontViewFlip()
@@ -49,20 +58,25 @@ public class FlippableCard : MonoBehaviour
 
     private IEnumerator FlipCardCoroutine(bool _faceUp, float _duration, OnFlipCompleted completed)
     {
-        Vector3 startRotation = transform.eulerAngles;
-        Vector3 targetRotation = ViewToRotation(_faceUp);
         float elapsedTime = 0f;
+        bool sfxPlayed = false;
 
         while (elapsedTime < _duration)
         {
+            if (!sfxPlayed && elapsedTime > _duration * 0.4f)
+            {
+                MatchingCardsSfx.PlayCardSfx();
+                sfxPlayed = true;
+            }
+            
             elapsedTime += Time.deltaTime;
             float t = m_FlipCurve.Evaluate(elapsedTime / _duration);
-            transform.eulerAngles = Vector3.Lerp(startRotation, targetRotation, t);
+            transform.eulerAngles = Vector3.Lerp(ViewToRotation(!_faceUp), ViewToRotation(_faceUp), t);
             UpdateFrontAndBackVisibility();
             yield return null;
         }
 
-        transform.eulerAngles = targetRotation;
+        transform.eulerAngles = ViewToRotation(_faceUp);
         UpdateFrontAndBackVisibility();
         m_FlipCoroutine = null;
         
