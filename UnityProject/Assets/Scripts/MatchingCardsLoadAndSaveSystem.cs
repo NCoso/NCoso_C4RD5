@@ -3,13 +3,15 @@ using UnityEngine;
 
 public static class MatchingCardsLoadAndSaveSystem
 {
-    // Grouped PlayerPrefs keys
+    // PlayerPrefs keys
     private const string SCORING_DATA_KEY = "SCORING_DATA";
     private const string GRID_DATA_KEY = "GRID_DATA";
     private const string GAME_STATUS_KEY = "GAME_STATUS";
     private const string CARD_CONTENT_KEY = "CARD_CONTENT";
     private const string CARD_STATES_KEY = "CARD_STATES";
     
+    
+    // Check for saved game that's both existing and not completed
     public static bool IsDataSaved()
     {
         // No data saved case

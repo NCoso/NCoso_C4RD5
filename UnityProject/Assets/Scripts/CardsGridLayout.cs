@@ -14,9 +14,10 @@ public class CardsGridLayout : MonoBehaviour
     [ContextMenu("Arrange Cards")]
     public void ArrangeCards()
     {
+        // Skip if no cards to arrange
         if (m_cards == null || m_cards.Length == 0) return;
         
-        // Get full container size (without subtracting margins)
+        // Calculate card sizes respecting aspect ratio and margins
         Rect containerRect = _rectTransform.rect;
         float containerWidth = containerRect.width;
         float containerHeight = containerRect.height;
@@ -39,13 +40,14 @@ public class CardsGridLayout : MonoBehaviour
         
         // Calculate start position (centered)
         Vector2 startPos = new Vector2(
-            -(gridWidth / 2) + (cardWidth / 2),  // Centered horizontally
-            (gridHeight / 2) - (cardHeight / 2)   // Centered vertically
+            -(gridWidth / 2) + (cardWidth / 2),
+            (gridHeight / 2) - (cardHeight / 2)
         );
         
-        // Position each card
+        // Position cards in grid with equal spacing
         for (int i = 0; i < m_cards.Length; i++)
         {
+            // Skip if beyond grid capacity
             if (i >= m_gridSize.x * m_gridSize.y) break;
             
             int row = i / m_gridSize.x;

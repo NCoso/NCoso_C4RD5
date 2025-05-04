@@ -53,11 +53,12 @@ public class MatchingCardsController : MonoBehaviour
             GenerateRandomGame();
     }
 
+    
+    // Attempt to load all game data - if any step fails, fall back to new game
     public void TryLoadData()
     {
         try
         {
-            // Load basic game data
             var savedData = MatchingCardsLoadAndSaveSystem.LoadGameData();
         
             // Reset game with saved grid size
@@ -98,9 +99,8 @@ public class MatchingCardsController : MonoBehaviour
         
         if (_gridSize.x % 2 == 1 && _gridSize.y % 2 == 1) // fix odd number of cards case - make it even
             _gridSize.y += 1;
-            
-        ResetGame(_gridSize);
-        GenerateRandomGrid();
+
+        GenerateNewGame(_gridSize);
     }
 
     public void GenerateNewGame(Vector2Int _gridSize)

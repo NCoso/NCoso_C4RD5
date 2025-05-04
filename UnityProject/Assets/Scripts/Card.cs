@@ -4,6 +4,8 @@ using UnityEngine.EventSystems;
 public class Card : MonoBehaviour, IPointerDownHandler, IPointerClickHandler
 {
     [SerializeField] protected MatchingCardsController m_matchingCardsController;
+    
+    // Card composition
     [SerializeField] protected FlippableCard m_flippableCard;
     [SerializeField] protected CardContent m_cardContent;
     [SerializeField] protected CardGlow m_cardSuccessGlow;
@@ -23,6 +25,7 @@ public class Card : MonoBehaviour, IPointerDownHandler, IPointerClickHandler
 
     protected void FlipCard()
     {
+        // Only allow flip if card isn't already flipping and is face down
         if (!m_flippableCard.IsFlipping && !m_flippableCard.IsFrontVisible)
         {
             m_matchingCardsController.FlipCard(this);
