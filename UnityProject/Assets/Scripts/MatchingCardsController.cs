@@ -8,21 +8,105 @@ public class MatchingCardsController : MonoBehaviour
     [SerializeField] private CardsGridLayout m_gridLayout; // Content-fitter Grid layout for cards
 
     // Gameplay data:
-    protected int m_totalPairs = 0;
-    protected int m_foundPairs = 0;
-    protected int m_turns = 0;
-    protected Card flippedCard = null;
-    protected Card[] m_cards;
+    public Vector2Int GridSize
+    {
+        get;
+        protected set;
+    }
+    public int TotalPairs
+    {
+        get;
+        protected set;
+    }
+    public int FoundPairs
+    {
+        get;
+        protected set;
+    }
+    public int Turns
+    {
+        get;
+        protected set;
+    }
+    
+    public Card CurrentFlippedCard
+    {
+        get;
+        protected set;
+    }
+    public Card[] AllCards
+    {
+        get;
+        protected set;
+    }
+    public bool[] PairedCards
+    {
+        get;
+        protected set;
+    }
 
     public void Awake()
     {
-        StartDebugGame4x4();
+        if (MatchingCardsLoadAndSaveSystem.IsDataSaved())
+            TryLoadData();
+        else
+            GenerateRandomGame();
     }
 
-    [ContextMenu("Start Debug Game 4x4")]
-    public void StartDebugGame4x4()
+    public void TryLoadData()
     {
-        ResetGame(new Vector2Int(4, 4));
+        try
+        {
+            // Load basic game data
+            var savedData = MatchingCardsLoadAndSaveSystem.LoadGameData();
+        
+            // Reset game with saved grid size
+            ResetGame(savedData.gridSize);
+        
+            // Load card content
+            CardContentData[] cardsContent = MatchingCardsLoadAndSaveSystem.LoadCardsContent(savedData.totalPairs * 2);
+        
+            // Generate grid with saved content
+            GenerateFixedGrid(cardsContent);
+        
+            // Restore game state
+            FoundPairs = savedData.foundPairs;
+            Turns = savedData.turns;
+        
+            // Load card states
+            MatchingCardsLoadAndSaveSystem.LoadCardStates(out bool[] pairedCards, AllCards.Length);
+            PairedCards = pairedCards;
+        
+            // Restore score
+            MatchingCardsScoreSystem.CurrentScore = savedData.score;
+            MatchingCardsScoreSystem.CurrentCombo = savedData.combo;
+        
+            // Restore card visual states
+            for (int i = 0; i < AllCards.Length; i++)
+                AllCards[i].ImmediateFlip(pairedCards[i]);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Failed to load game: {e.Message}");
+            GenerateRandomGame();
+        }
+    }
+
+    public void GenerateRandomGame()
+    {
+        Vector2Int _gridSize = new Vector2Int(UnityEngine.Random.Range(2, 6), UnityEngine.Random.Range(2, 6));
+        
+        if (_gridSize.x % 2 == 1 && _gridSize.y % 2 == 1) // fix odd number of cards case - make it even
+            _gridSize.y += 1;
+            
+        ResetGame(_gridSize);
+        GenerateRandomGrid();
+    }
+
+    public void GenerateNewGame(Vector2Int _gridSize)
+    {
+        ResetGame(_gridSize);
+        GenerateRandomGrid();
     }
     
     public void ResetGame(Vector2Int _gridSize)
@@ -35,45 +119,69 @@ public class MatchingCardsController : MonoBehaviour
 
         MatchingCardsScoreSystem.Reset();
         
-        m_totalPairs = _gridSize.x * _gridSize.y / 2;
-        m_foundPairs = 0;
-        m_turns = 0;
-        flippedCard = null;
-        m_cards = new Card[m_totalPairs * 2];
-        
-        GenerateGrid(_gridSize);
+        GridSize = _gridSize;
+        TotalPairs = _gridSize.x * _gridSize.y / 2;
+        FoundPairs = 0;
+        Turns = 0;
+        CurrentFlippedCard = null;
+        AllCards = new Card[TotalPairs * 2];
+        PairedCards = new bool[TotalPairs * 2];
     }
 
-    protected void ShuffleCards() // Fisher-Yates shuffle algorithm
+    protected void GenerateRandomGrid()
     {
-        for (int i = m_cards.Length - 1; i > 0; i--)
-        {
-            int randomIndex = UnityEngine.Random.Range(0, i + 1);
-            (m_cards[i], m_cards[randomIndex]) = (m_cards[randomIndex], m_cards[i]);
-        }
+        CardContentData[] pairsContent = CardContent.GetEvenDistributedCardContentData(TotalPairs);
+        GenerateShuffledGrid(pairsContent);
+        MatchingCardsLoadAndSaveSystem.SaveGameData(this);
     }
 
-    protected void GenerateGrid(Vector2Int _gridSize)
+    protected void GenerateFixedGrid(CardContentData[] allCardsContent)
+    {
+        m_gridLayout.CleanupGrid();
+        int cardIndex = 0;
+        for (int i = 0; i < allCardsContent.Length; i += 1)
+        {
+            Card card = Instantiate(m_cardPrefab, m_gridLayout.transform);
+            card.gameObject.SetActive(true);
+            card.SetContentData(allCardsContent[i]);
+            AllCards[cardIndex++] = card;
+        }
+        
+        m_gridLayout.SetupGrid(GridSize, AllCards);
+    }
+
+    protected void GenerateShuffledGrid(CardContentData[] _pairsConent)
     {
         m_gridLayout.CleanupGrid();
 
         int cardIndex = 0;
-        for (int i = 0; i < m_totalPairs; i += 1)
+        for (int i = 0; i < TotalPairs; i += 1)
         {
             Card card1 = Instantiate(m_cardPrefab, m_gridLayout.transform);
             Card card2 = Instantiate(m_cardPrefab, m_gridLayout.transform);
             card1.gameObject.SetActive(true);
             card2.gameObject.SetActive(true);
-            CardContentData pairCardData = CardContent.GetRandomCardContentData();
-            card1.SetContentData(pairCardData);
-            card2.SetContentData(pairCardData);
+            card1.SetContentData(_pairsConent[i]);
+            card2.SetContentData(_pairsConent[i]);
 
-            m_cards[cardIndex++] = card1;
-            m_cards[cardIndex++] = card2;
+            AllCards[cardIndex++] = card1;
+            AllCards[cardIndex++] = card2;
         }
 
         ShuffleCards();
-        m_gridLayout.SetupGrid(_gridSize, m_cards);
+        m_gridLayout.SetupGrid(GridSize, AllCards);
+    }
+
+    
+    
+
+    protected void ShuffleCards()
+    {
+        for (int i = AllCards.Length - 1; i > 0; i--)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, i + 1);
+            (AllCards[i], AllCards[randomIndex]) = (AllCards[randomIndex], AllCards[i]);
+        }
     }
 
     public void FlipCard(Card card)
@@ -83,20 +191,20 @@ public class MatchingCardsController : MonoBehaviour
 
     public void CardFlipped(Card card)
     {
-        if (flippedCard == null)
+        if (CurrentFlippedCard == null)
         {
-            flippedCard = card;
+            CurrentFlippedCard = card;
         }
         else
         {
-            CompareFlippedCards(flippedCard, card);
-            flippedCard = null;
+            CompareFlippedCards(CurrentFlippedCard, card);
+            CurrentFlippedCard = null;
         }
     }
 
     public void CompareFlippedCards(Card card1, Card card2)
     {
-        m_turns += 1;
+        Turns += 1;
         
         if (card1.IsConentEquals(card2))
             PairSolved(card1, card2);
@@ -106,37 +214,45 @@ public class MatchingCardsController : MonoBehaviour
 
     public void PairSolved(Card card1, Card card2)
     {
-        Debug.Log("Pair Solved - keep front-facing");
+        //Debug.Log("Pair Solved - keep front-facing");
         MatchingCardsScoreSystem.OnPairSolved();
         
-        m_foundPairs += 1;
+        FoundPairs += 1;
         
         card1.SuccessGlow();
         card2.SuccessGlow();
 
         MatchingCardsSfx.PlaySuccessSfx();
         
-        if (m_foundPairs == m_totalPairs)
+        if (FoundPairs == TotalPairs)
         {
             GameCompleted();
+            MatchingCardsLoadAndSaveSystem.DeleteAllSavedData(); // Game ended - remove related saved data
+        }
+        else
+        {
+            PairedCards[Array.IndexOf(AllCards, card1)] = true;
+            PairedCards[Array.IndexOf(AllCards, card2)] = true;
+            MatchingCardsLoadAndSaveSystem.SaveGameProgress(this); // Game progress - save data
         }
     }
     
     public void PairFailed(Card card1, Card card2)
     {
-        Debug.Log("Pair Failed - revert to back-facing");
+        //Debug.Log("Pairing Failed - revert to back-facing");
         MatchingCardsScoreSystem.OnPairFailed();
         
         card1.AnimateBackFlip();
         card2.AnimateBackFlip();
         
         MatchingCardsSfx.PlayFailSfx();
+        MatchingCardsLoadAndSaveSystem.SaveGameProgress(this); // Game progress - save data
     }
 
     public void GameCompleted()
     {
         Debug.Log("All pairs solved - game completed");
-        MatchingCardsScoreSystem.OnGameCompleted(m_turns);
+        MatchingCardsScoreSystem.OnGameCompleted(Turns);
         StartCoroutine(GameOverAnimations());
     }
 
@@ -145,12 +261,11 @@ public class MatchingCardsController : MonoBehaviour
         yield return new WaitForSeconds(_delay);
 
         float delayBetweenCards = 0.05f;
-        for (int i = 0; i < m_cards.Length; i += 1)
+        for (int i = 0; i < AllCards.Length; i += 1)
         {
-            m_cards[i].SuccessGlow(_delay:delayBetweenCards * i);
+            AllCards[i].SuccessGlow(_delay:delayBetweenCards * i);
         }
         
-        MatchingCardsSfx.PlayGameOverSfx(_delay: delayBetweenCards * m_cards.Length * 0.5f);
-        
+        MatchingCardsSfx.PlayGameOverSfx(_delay: delayBetweenCards * AllCards.Length * 0.5f);
     }
 }

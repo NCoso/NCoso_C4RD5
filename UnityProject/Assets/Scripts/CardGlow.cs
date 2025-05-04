@@ -48,10 +48,11 @@ public class CardGlow : MonoBehaviour
             {
                 glow1.fillOrigin = (int)Image.Origin360.Bottom;
                 glow2.fillOrigin = (int)Image.Origin360.Bottom;
+                fillOriginSwitched = true;
             }
             
             elapsedTime += Time.deltaTime;
-            float t = m_GlowCurve.Evaluate(elapsedTime);
+            float t = m_GlowCurve.Evaluate(elapsedTime / _duration);
             float currentProgress = Mathf.Lerp(0, 1, t);
             SetRadialGlowProgress(currentProgress);
             yield return null;

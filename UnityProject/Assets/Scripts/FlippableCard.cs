@@ -3,26 +3,25 @@ using UnityEngine;
 
 public class FlippableCard : MonoBehaviour
 {
-    
+    //Static utils
     protected static Vector3 s_FaceUpRotation => Vector3.zero;
     protected static Vector3 s_FaceDownRotation => Vector3.up * 180;
     protected static Vector3 ViewToRotation(bool _isFaceUp) => _isFaceUp ? s_FaceUpRotation : s_FaceDownRotation;
     
+    //Member utils
+    public bool IsFrontVisible => transform.eulerAngles.y < 90 || transform.eulerAngles.y > 270;
+    public bool IsFlipping => m_FlipCoroutine != null;
+
     
     public delegate void OnFlipCompleted(Card card);
     
-
+    //Serialized Data
     [SerializeField] protected RectTransform m_CardFront, m_CardBack;
     [SerializeField] private AnimationCurve m_FlipCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     
     
     protected Coroutine m_FlipCoroutine;
-    
-    
-    public bool IsFrontVisible => transform.eulerAngles.y < 90 || transform.eulerAngles.y > 270;
-    public bool IsFlipping => m_FlipCoroutine != null;
-    
     
     
     [ContextMenu("Front view flip")]
