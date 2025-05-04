@@ -6,6 +6,7 @@ public class MatchingCardsController : MonoBehaviour
 {
     [SerializeField] private Card m_cardPrefab; // CardPrefab - dynamic instantiation
     [SerializeField] private CardsGridLayout m_gridLayout; // Content-fitter Grid layout for cards
+    [SerializeField] private GameObject m_restartPanel; // Restart panel (shown once game ended)
 
     // Gameplay data:
     public Vector2Int GridSize
@@ -132,7 +133,7 @@ public class MatchingCardsController : MonoBehaviour
     {
         CardContentData[] pairsContent = CardContent.GetEvenDistributedCardContentData(TotalPairs);
         GenerateShuffledGrid(pairsContent);
-        MatchingCardsLoadAndSaveSystem.SaveGameData(this);
+        MatchingCardsLoadAndSaveSystem.SaveAll(this);
     }
 
     protected void GenerateFixedGrid(CardContentData[] allCardsContent)
@@ -265,7 +266,13 @@ public class MatchingCardsController : MonoBehaviour
         {
             AllCards[i].SuccessGlow(_delay:delayBetweenCards * i);
         }
+
+        float allCardsDelay = delayBetweenCards*AllCards.Length;
         
-        MatchingCardsSfx.PlayGameOverSfx(_delay: delayBetweenCards * AllCards.Length * 0.5f);
+        MatchingCardsSfx.PlayGameOverSfx(_delay: allCardsDelay * 0.5f);
+        
+        yield return new WaitForSeconds(allCardsDelay + _delay);
+        
+        m_restartPanel.gameObject.SetActive(true);
     }
 }
